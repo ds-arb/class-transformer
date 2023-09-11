@@ -149,6 +149,7 @@ export class TransformOperationExecutor {
 
       const keys = this.getKeys(targetType as Function, value, isMap);
       let newValue: any = source ? source : {};
+      let defaultValues: any = {};
       if (
         !source &&
         (this.transformationType === TransformationType.PLAIN_TO_CLASS ||
@@ -158,6 +159,8 @@ export class TransformOperationExecutor {
           newValue = new Map();
         } else if (targetType) {
           newValue = new (targetType as any)();
+          defaultValues = { ...newValue };
+          this.unsetInstance(newValue, keys);
         } else {
           newValue = {};
         }
@@ -328,7 +331,7 @@ export class TransformOperationExecutor {
           } else {
             if (subValue === undefined && this.options.exposeDefaultValues) {
               // Set default value if nothing provided
-              finalValue = newValue[newValueKey];
+              finalValue = newValue[newValueKey] || defaultValues[newValueKey];
             } else {
               finalValue = this.transform(subSource, subValue, type, arrayType, isSubValueMap, level + 1);
               finalValue = this.applyCustomTransformations(
@@ -543,5 +546,13 @@ export class TransformOperationExecutor {
     if (!groups) return true;
 
     return this.options.groups.some(optionGroup => groups.includes(optionGroup));
+  }
+
+  private unsetInstance(instance: any, keys: string[]) {
+    for (let key in instance) {
+      if (keys.includes(key)) {
+        delete instance[key];
+      }
+    }
   }
 }
